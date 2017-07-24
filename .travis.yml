@@ -1,3 +1,28 @@
 language: c
-os: osx
-script: ./configure && make && sudo make install && make test
+matrix:
+  include:
+  - os: osx
+    osx_image: xcode8.3
+  - os: osx
+    osx_image: xcode7.3
+  - os: osx
+    osx_image: xcode6.4
+before_install:
+- sudo mkdir /opt/local.old
+- sudo mv /usr/local/* /opt/local.old && hash -r
+script: "./configure && make && sudo make install && make test"
+before_deploy:
+- sed -i "" "s/-v selfupdate/version/" portmgr/dmg/postflight
+- sudo install portmgr/dmg/postflight /opt/local/
+- sudo install src/*.tcl /opt/local/
+- export OS_MAJOR=$(uname -r | cut -f 1 -d .)
+- tar -cjf MacPorts-$TRAVIS_TAG-$OS_MAJOR.tar.bz2 /opt/local
+- sudo mv /opt/local.old/* /usr/local && hash -r
+deploy:
+  provider: releases
+  file: MacPorts-$TRAVIS_TAG-$OS_MAJOR.tar.bz2
+  skip_cleanup: true
+  on:
+    tags: true
+  api_key:
+    secure: Gzwpl6YAWfCRL3adYyCEQIfDTjeHZGP3UW9qC9sIYlywlTLsaZ8ZQgt3y8oSjXIFI2rxLa9ejMLz41qb8z3YooQAEGX+Pop6HQ8Nizo5eUt7EP5/mAgyTQDKWnF4ifU0+dOUnn0iZqp+0kwuaDJCEz5i3SbNokSq5FYd3VNVoWYkQ/TQTSI3blpK/wgVAq27WmlgVObuwnz5bnbjEiHEpQl0bIN+Zs6nhtj4s+VQDAGaSSmwtkq1Md9hcncdDayDoyt1GlK457sdhMDqqcFZgN/Bovnk40/MWpBkWJRBakKU3kuhWsWVudK/dLxANEvxlVjD/e1d+Yd11rCKLBCGgl3ZFxmXvgfM9L/YsUOM8wsAbBMiecFnPqxp8Ja02GrP6cuTYo776l/VbMzJDDF5A/OWmNxXNVhf/A8Hv0xkKzC77zZcuAqULqH0j/ERsw+Evo9yD0bozwYA/YCT1lCKES9h541CvR5le7576ivVz4MOCWunXSQeVJqy/9U5VwwxTx1L5/us/+4cyO9poaQ9qyM6l8B6Pyh+SBRPWSgQZDNy6Y/qFVKEBZTm9gLE8mqNZW10GZLi5rjNRsVW631C4Ix3hvSu4+mo6jQ4RYRHj3oft/i95Zdv4hJAgOCEcRXa5HRFA5RPSlWHeRFhP2DO9EerTX3EFWIZWbzn0htB9nM=
